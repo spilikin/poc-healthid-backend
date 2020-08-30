@@ -63,7 +63,7 @@ def load_account(acct: str, remote_user: User):
                 account.avatarURI = "/photos/female60.jpg"
         
         account.fhirPatientId = patient.id
-        db.accounts.update(account.dict())
+        db.accounts.update(account.dict(), db.where('acct') == account.acct)
 
     return account
 
