@@ -2,7 +2,7 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
-API_VERSION = '0.10.0'
+API_VERSION = '0.12.0'
     
 api = FastAPI(
     title=f"HealthID API",
