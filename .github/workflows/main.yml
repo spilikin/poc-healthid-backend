@@ -31,8 +31,8 @@ jobs:
         host: ${{ secrets.HOST }}
         username: ${{ secrets.USERNAME }}
         key: ${{ secrets.SSH_KEY }}
-        source: "healthid"
-        target: "."
+        source: "."
+        target: "healthid"
     - name: Recreate Docker Compose Services
       uses: appleboy/ssh-action@master
       with:
