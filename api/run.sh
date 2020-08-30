@@ -1,0 +1,1 @@
+uvicorn healthid:app --reload

@@ -1,0 +1,1 @@
+from healthid.main import app

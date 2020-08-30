@@ -1,0 +1,43 @@
+version: '3'
+
+services:
+  frontgate:
+    image: openresty/openresty:alpine
+    restart: unless-stopped
+    networks:
+        - backnet
+    volumes:
+        # Main config
+        - ../.certbot/conf:/etc/letsencrypt
+        - ../.certbot/www:/var/www/certbot
+        - ./frontgate/conf.d:/etc/nginx/conf.d
+        # Backgates
+        - ./frontgate/acme/www:/var/www/acme
+        - ./frontgate/appauth.acme/www:/var/www/appauth.acme
+    ports:
+      - "80:80"
+      - "443:443"
+
+  certbot:
+    image: certbot/certbot
+    restart: unless-stopped
+    volumes:
+      - ../.certbot/conf:/etc/letsencrypt
+      - ../.certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+    networks:
+      - backnet
+
+  healthid:
+    build:
+      context: ./
+    volumes:
+      # Main config
+      - ../healthid_db:/app/.db
+
+    networks:
+      - backnet
+  
+networks:
+    backnet:
+        driver: bridge
