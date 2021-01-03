@@ -1,43 +1,38 @@
 version: '3'
 
 services:
-  frontgate:
-    image: openresty/openresty:alpine
-    restart: unless-stopped
-    networks:
-        - backnet
-    volumes:
-        # Main config
-        - ../.certbot/conf:/etc/letsencrypt
-        - ../.certbot/www:/var/www/certbot
-        - ./frontgate/conf.d:/etc/nginx/conf.d
-        # Backgates
-        - ./frontgate/acme/www:/var/www/acme
-        - ./frontgate/appauth.acme/www:/var/www/appauth.acme
-    ports:
-      - "80:80"
-      - "443:443"
 
-  certbot:
-    image: certbot/certbot
-    restart: unless-stopped
-    volumes:
-      - ../.certbot/conf:/etc/letsencrypt
-      - ../.certbot/www:/var/www/certbot
-    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
-    networks:
-      - backnet
+  reverse-proxy:
+      image: traefik:v2.3
+      command: 
+          #- "--log.level=DEBUG"
+          - "--api.insecure=true"
+          - "--providers.docker=true"
+          - "--providers.docker.exposedbydefault=false"
+          - "--entrypoints.websecure.address=:443"
+          - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+          #- "--certificatesresolvers.myresolver.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
+          - "--certificatesresolvers.myresolver.acme.email=cloud@spilikin.dev"
+          - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+      ports:
+          # The HTTP port
+          - "443:443"
+          # The Web UI (enabled by --api.insecure=true)
+          - "8080:8080"
+      volumes:
+          # So that Traefik can listen to the Docker events
+          - /var/run/docker.sock:/var/run/docker.sock
+          - "./letsencrypt:/letsencrypt"
 
-  healthid:
+  healthid-backend:
     build:
-      context: ./
+        context: https://github.com/spilikin/poc-healthid-backend.git
+    labels:
+        - "traefik.enable=true"
+        - "traefik.http.services.healthid-backend.loadbalancer.server.port=8000"
+        - "traefik.http.routers.healthid-backend.rule=Host(`acme.spilikin.dev`)"
+        - "traefik.http.routers.healthid-backend.entrypoints=websecure"
+        - "traefik.http.routers.healthid-backend.tls.certresolver=myresolver"
     volumes:
       # Main config
-      - ../healthid_db:/app/.db
-
-    networks:
-      - backnet
-  
-networks:
-    backnet:
-        driver: bridge
+      - ./db:/app/.db
