@@ -36,3 +36,12 @@ services:
     volumes:
       # Main config
       - ./db:/app/.db
+
+  appauth:
+    build:
+        context: https://github.com/spilikin/poc-healthid-backend.git#:appauth
+    labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.appauth.rule=Host(`appauth.acme.spilikin.dev`)"
+        - "traefik.http.routers.appauth.entrypoints=websecure"
+        - "traefik.http.routers.appauth.tls.certresolver=myresolver"
